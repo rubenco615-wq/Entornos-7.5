@@ -27,3 +27,36 @@ graph LR
     Recepcionista --- UC5
 ```
 
+
+EJERCICIO 2
+
+```mermaid
+stateDiagram-v2
+    [*] --> IdentifyMember
+
+    IdentifyMember --> ValidateMember
+    ValidateMember --> memberStatusDecision
+
+    state memberStatusDecision <<choice>>
+    memberStatusDecision --> CheckFeeStatus : [member active]
+    memberStatusDecision --> RejectReservation : [member inactive]
+
+    CheckFeeStatus --> feeStatusDecision
+    state feeStatusDecision <<choice>>
+    feeStatusDecision --> CheckClassCapacity : [fee up to date]
+    feeStatusDecision --> RejectReservation : [fee unpaid]
+
+    CheckClassCapacity --> capacityDecision
+    state capacityDecision <<choice>>
+    capacityDecision --> ConfirmReservation : [spots available]
+    capacityDecision --> WaitlistOrNotifyFull : [class full]
+
+    ConfirmReservation --> SendConfirmation
+    SendConfirmation --> [*]
+
+    RejectReservation --> [*]
+    WaitlistOrNotifyFull --> [*]
+```
+
+
+
