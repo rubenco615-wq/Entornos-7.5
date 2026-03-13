@@ -1,133 +1,130 @@
 # Entornos-7.5
 
-EJERCICIO 1 
-
+ EJERCICIO  1.Análisis de Requisitos
+ 
 ```mermaid
 graph LR
-    %% Actores
-    Socio((Socio))
-    Recepcionista((Recepcionista))
 
-    %% Límite del sistema
-    subgraph "Sistema: App de Gestión de Gimnasio"
-        UC1([Reservar Clase])
-        UC2([Identificarse])
-        UC3([Cancelar Reserva])
-        UC4([Alquilar Toalla])
-        UC5([Pasar Lista])
+Member((Member))
+Admin((Administrator))
 
-        %% Relaciones entre casos de uso
-        UC1 -.->|<<include>>| UC2
-        UC4 -.->|<<extend>>| UC1
-    end
+subgraph "GymMaster"
+CU1([Book Class])
+CU2([Join Waitlist])
+CU3([Create New Class])
+CU4([Cancel Session])
+CU5([Login])
+end
 
-    %% Relaciones actor-caso de uso
-    Socio --- UC1
-    Socio --- UC3
-    Recepcionista --- UC5
+Member --- CU1
+Admin --- CU3
+Admin --- CU4
+
+CU1 -.->|<<include>>| CU5
+CU2 -.->|<<extend>>| CU1
+CU3 -.->|<<include>>| CU5
+CU4 -.->|<<include>>| CU5
 ```
 
-
-EJERCICIO 2
-
-```mermaid
-stateDiagram-v2
-    [*] --> IdentifyMember
-
-    IdentifyMember --> ValidateMember
-    ValidateMember --> memberStatusDecision
-
-    state memberStatusDecision <<choice>>
-    memberStatusDecision --> CheckFeeStatus : [member active]
-    memberStatusDecision --> RejectReservation : [member inactive]
-
-    CheckFeeStatus --> feeStatusDecision
-    state feeStatusDecision <<choice>>
-    feeStatusDecision --> CheckClassCapacity : [fee up to date]
-    feeStatusDecision --> RejectReservation : [fee unpaid]
-
-    CheckClassCapacity --> capacityDecision
-    state capacityDecision <<choice>>
-    capacityDecision --> ConfirmReservation : [spots available]
-    capacityDecision --> WaitlistOrNotifyFull : [class full]
-
-    ConfirmReservation --> SendConfirmation
-    SendConfirmation --> [*]
-
-    RejectReservation --> [*]
-    WaitlistOrNotifyFull --> [*]
-```
-
-EJERCICIO 3
-
-```mermaid
-stateDiagram-v2
-    [*] --> Pending
-
-    Pending --> Confirmed : confirmPlace()
-    Confirmed --> Attended : registerAttendance()
-    Confirmed --> Canceled : cancelByMember() / cancelBySystem()
-
-    Attended --> [*]
-    Canceled --> [*]
-```
-EJERCICIO 4
+EJERCICIO 2 Diseño de la Interacción
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Socio
-    participant App
-    participant MemberService
-    participant ClassService
-    participant ReservationService
+    actor Member
+    participant WebInterface
+    participant BookingManager
+    participant Database
 
-    Socio->>App: reserveClass(classId)
-    activate App
+    Member ->> WebInterface: confirmBooking(classId)
+    activate WebInterface
 
-    App->>MemberService: validateMember(memberId)
-    activate MemberService
-    MemberService-->>App: memberValid, feeUpToDate
-    deactivate MemberService
+    WebInterface ->> BookingManager: process(memberId, classId)
+    activate BookingManager
+    
+    BookingManager ->> Database: checkSpots(classId)
+    activate Database
 
-    alt member inactive
-        App-->>Socio: error("Socio inactivo")
-    else fee unpaid
-        App-->>Socio: error("Cuota no al día")
-    else member valid and fee up to date
-        App->>ClassService: checkCapacity(classId)
-        activate ClassService
-        ClassService-->>App: spotsAvailable
-        deactivate ClassService
+    Database -->> BookingManager: availableSpots
+    deactivate Database
 
-        alt class full
-            App-->>Socio: error("Clase sin plazas")
-        else spots available
-            App->>ReservationService: createReservation(memberId, classId)
-            activate ReservationService
-            ReservationService-->>App: reservationConfirmed
-            deactivate ReservationService
+    alt spots available
+        BookingManager ->> Database: saveBooking()
+        activate Database
+        Database -->> BookingManager: ok
+        deactivate Database
 
-            App-->>Socio: confirmation("Reserva confirmada")
-        end
+        BookingManager -->> WebInterface: bookingOK
+        WebInterface -->> Member: successMessage
+    
+    else capacity full
+        BookingManager -->> WebInterface: errorFull
+        WebInterface -->> Member: waitlistMessage
     end
 
-    deactivate App
+    deactivate BookingManager
+    deactivate WebInterface
 ```
-EJERCICIO 5
+EJERCICIO 3
 
 ```mermaid
 graph LR
-    Socio((:Socio))
-    App((:GymApp))
-    MemberService((:MemberService))
-    ClassService((:ClassService))
-    ReservationService((:ReservationService))
 
-    Socio -- "1: reserveClass(classId)" --> App
-    App -- "1.1: validateMember(memberId)" --> MemberService
-    App -- "1.2: checkCapacity(classId)" --> ClassService
-    App -- "1.3: createReservation(memberId, classId)" --> ReservationService
-    ReservationService -- "1.4: reservationConfirmed()" --> App
-    App -- "1.5: showConfirmation()" --> Socio
+Member((:Member))
+-- "1: confirmBooking(classId)"
+--> Interface((:WebInterface))
+
+Interface
+-- "1.1: process(memberId, classId)"
+--> Manager((:BookingManager))
+
+Manager
+-- "1.1.1: checkSpots(classId)"
+--> DB((:Database))
+
+Manager
+-- "1.1.2: [spots available] saveBooking()"
+--> DB
+```
+
+EJERCICIO 4 Lógica del Proceso
+```mermaid
+stateDiagram-v2
+    [*] --> ReceiveRequest
+
+    ReceiveRequest --> CheckPayment
+    
+    state paymentDecision <<choice>>
+    CheckPayment --> paymentDecision
+    
+    paymentDecision --> CheckCapacity: [Paid]
+    paymentDecision --> Reject: [Unpaid]
+
+    state capacityDecision <<choice>>
+    CheckCapacity --> capacityDecision
+
+    capacityDecision --> BlockSpot: [Available]
+    capacityDecision --> NotifyFull: [Full]
+
+    BlockSpot --> SendEmail
+
+    SendEmail --> [*]
+    Reject --> [*]
+    NotifyFull --> [*]
+```
+
+EJERCICIO 5 Ciclo de Vida del Objeto
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+
+    Pending --> Confirmed : confirm()
+    Pending --> Cancelled : cancel()
+
+    Confirmed --> Attended : checkIn()
+    Confirmed --> NotPresented : markAbsent()
+
+    Attended --> [*]
+    NoShow --> [*]
+    Cancelled --> [*]
 ```
