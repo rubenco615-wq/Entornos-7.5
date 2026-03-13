@@ -71,5 +71,47 @@ stateDiagram-v2
     Attended --> [*]
     Canceled --> [*]
 ```
+EJERCICIO 4
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Socio
+    participant App
+    participant MemberService
+    participant ClassService
+    participant ReservationService
+
+    Socio->>App: reserveClass(classId)
+    activate App
+
+    App->>MemberService: validateMember(memberId)
+    activate MemberService
+    MemberService-->>App: memberValid, feeUpToDate
+    deactivate MemberService
+
+    alt member inactive
+        App-->>Socio: error("Socio inactivo")
+    else fee unpaid
+        App-->>Socio: error("Cuota no al día")
+    else member valid and fee up to date
+        App->>ClassService: checkCapacity(classId)
+        activate ClassService
+        ClassService-->>App: spotsAvailable
+        deactivate ClassService
+
+        alt class full
+            App-->>Socio: error("Clase sin plazas")
+        else spots available
+            App->>ReservationService: createReservation(memberId, classId)
+            activate ReservationService
+            ReservationService-->>App: reservationConfirmed
+            deactivate ReservationService
+
+            App-->>Socio: confirmation("Reserva confirmada")
+        end
+    end
+
+    deactivate App
+```
 
