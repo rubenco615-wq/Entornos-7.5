@@ -114,4 +114,20 @@ sequenceDiagram
 
     deactivate App
 ```
+EJERCICIO 5
 
+```mermaid
+graph LR
+    Socio((:Socio))
+    App((:GymApp))
+    MemberService((:MemberService))
+    ClassService((:ClassService))
+    ReservationService((:ReservationService))
+
+    Socio -- "1: reserveClass(classId)" --> App
+    App -- "1.1: validateMember(memberId)" --> MemberService
+    App -- "1.2: checkCapacity(classId)" --> ClassService
+    App -- "1.3: createReservation(memberId, classId)" --> ReservationService
+    ReservationService -- "1.4: reservationConfirmed()" --> App
+    App -- "1.5: showConfirmation()" --> Socio
+```
