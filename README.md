@@ -58,5 +58,18 @@ stateDiagram-v2
     WaitlistOrNotifyFull --> [*]
 ```
 
+EJERCICIO 3
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+
+    Pending --> Confirmed : confirmPlace()
+    Confirmed --> Attended : registerAttendance()
+    Confirmed --> Canceled : cancelByMember() / cancelBySystem()
+
+    Attended --> [*]
+    Canceled --> [*]
+```
 
 
